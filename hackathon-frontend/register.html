@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+    <title>Hackathon Registration</title>
+    <style> 
+        @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* Keyframe Animations */
+        @keyframes fadeInScale {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes listItemFadeIn {
+            from {
+                opacity: 0;
+                transform: translateX(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        body {
+            font-family: 'Space Mono', monospace; /* Changed font to Space Mono for a hackathon feel */
+            background: linear-gradient(135deg, #0f172a, #020617);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: stretch;
+            padding: 20px;
+            padding-top: 90px;
+            padding-bottom: 70px;
+            gap: 25px;
+            position: relative;
+            color: white;
+        }
+
+        /* 3D canvas background */
+
+        #canvas3d {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+
+        /* Header */
+
+        header {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background: rgba(10, 10, 25, 0.9);
+            backdrop-filter: blur(12px);
+            color: white;
+            padding: 10px; /* Reduced padding for a smaller header */
+            text-align: center;
+            font-size: 18px; /* Reduced font size for a smaller header */
+            font-weight: 700; /* Slightly less bold */
+            letter-spacing: 1px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.6);
+            /* Initial shadow */
+            z-index: 10;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+            /* Subtle text glow */
+            animation: headerFooterPulse 2s infinite alternate;
+            /* Subtle pulse animation */
+            transition: text-shadow 0.3s ease;
+        }
+
+        .dashboard-header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px; /* Reduced padding */
+            font-size: 18px; /* Reduced font size */
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+
+        .header-logo {
+            height: 55px; /* Increased logo size */
+            margin-right: 15px; /* Space between logo and title */
+        }
+        @keyframes headerFooterPulse {
+            from {
+                box-shadow: 0 8px 25px rgba(0, 0, 0, 0.6);
+            }
+
+            to {
+                box-shadow: 0 8px 35px rgba(99, 102, 241, 0.4), 0 0 15px rgba(255, 255, 255, 0.1);
+                text-shadow: 0 0 12px rgba(255, 255, 255, 0.8);
+            }
+        }
+
+        /* Footer */
+        header:hover {
+            text-shadow: 0 0 15px rgba(255, 255, 255, 0.6);
+        }
+
+
+        footer {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            background: rgba(10, 10, 25, 0.9);
+            backdrop-filter: blur(10px);
+            color: rgba(255, 255, 255, 0.6);
+            padding: 14px;
+            text-align: center;
+            font-size: 13px;
+            /* Slightly smaller font */
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            z-index: 10;
+            transition: text-shadow 0.3s ease;
+            animation: headerFooterPulse 2s infinite alternate;
+            /* Subtle pulse animation */
+        }
+
+        /* Form Card */
+
+        .container {
+            background: rgba(20, 20, 40, 0.8);
+            backdrop-filter: blur(14px);
+            border-radius: 18px;
+            padding: 40px;
+            max-width: 450px;
+            width: 100%;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow:
+                0 10px 40px rgba(0, 0, 0, 0.6),
+                0 0 40px rgba(99, 102, 241, 0.2);
+            /* Initial glow */
+            transition: all .35s ease;
+            z-index: 1;
+            animation: fadeInUp 0.8s ease-out forwards;
+            /* Entrance animation */
+        }
+
+        .container:hover {
+            transform: translateY(-6px) scale(1.01);
+            box-shadow:
+                0 20px 50px rgba(0, 0, 0, 0.7),
+                0 0 50px rgba(99, 102, 241, 0.35);
+        }
+
+        /* Rules Card */
+
+        .rules-container {
+            background: rgba(20, 20, 40, 0.8);
+            backdrop-filter: blur(14px);
+            border-radius: 18px;
+            padding: 35px;
+            max-width: 450px;
+            width: 100%;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow:
+                0 10px 40px rgba(0, 0, 0, 0.6),
+                0 0 40px rgba(99, 102, 241, 0.2);
+            /* Initial glow */
+            transition: all .35s ease;
+            z-index: 1;
+            animation: fadeInUp 0.8s ease-out forwards 0.2s;
+            /* Entrance animation with slight delay */
+        }
+
+        .rules-container:hover {
+            transform: translateY(-6px);
+            box-shadow:
+                0 20px 50px rgba(0, 0, 0, 0.7),
+                0 0 50px rgba(99, 102, 241, 0.35);
+        }
+
+        /* Responsive */
+
+        @media (max-width:900px) {
+            body {
+                flex-direction: column;
+            }
+
+            .container,
+            .rules-container {
+                max-width: 100%;
+            }
+        }
+
+        /* Heading */
+
+        h2 {
+            text-align: center;
+            font-size: 30px;
+            /* Slightly larger */
+            font-weight: 800;
+            /* Bolder */
+            margin-bottom: 25px;
+            background: linear-gradient(90deg, #6366f1, #8b5cf6);
+            -webkit-background-clip: text;
+            /* For gradient text */
+            -webkit-background-clip: text;
+            color: transparent;
+        }
+
+        /* Inputs */
+
+        input,
+        select {
+            width: 100%;
+            padding: 14px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(15, 23, 42, 0.8);
+            color: white;
+            font-size: 15px;
+            transition: all .25s ease; /* Kept existing transition */
+        }
+
+        input:hover,
+        select:hover {
+            border-color: rgba(139, 92, 246, 0.4);
+            box-shadow: 0 0 8px rgba(139, 92, 246, 0.2);
+        }
+
+
+        input::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        input:focus,
+        select:focus {
+            outline: none;
+            border: 1px solid #8b5cf6;
+            /* More vibrant border on focus */
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.8), 0 0 20px rgba(139, 92, 246, 0.4);
+            /* Stronger, multi-color glow */
+        }
+
+        /* Button */
+
+        button {
+            width: 100%;
+            padding: 16px;
+            margin-top: 18px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            color: white;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            cursor: pointer;
+            transition: all .3s ease;
+            /* Slightly longer transition */
+            letter-spacing: .5px;
+        }
+
+        button:hover {
+            transform: translateY(-6px) scale(1.02);
+            /* More pronounced lift and slight scale */
+            box-shadow: 0 12px 30px rgba(99, 102, 241, 0.8), 0 0 25px rgba(139, 92, 246, 0.5);
+            /* Stronger, multi-color shadow */
+        }
+
+        button:active {
+            transform: translateY(-2px) scale(0.99);
+            /* Slight press effect */
+        }
+
+        /* Loading Spinner within Button */
+        #loadingSpinner {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        #loadingSpinner::before {
+            content: '';
+            width: 16px;
+            height: 16px;
+            border: 2px solid #fff;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Popup */
+
+        .popup {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(8px);
+            /* Stronger blur */
+            z-index: 999;
+            animation: fadeInScale 0.3s ease-out forwards;
+            /* Popup entrance animation */
+        }
+
+        .popup-content {
+            background: rgba(20, 20, 40, 0.9);
+            backdrop-filter: blur(12px);
+            width: 90%;
+            max-width: 480px;
+            margin: 150px auto;
+            padding: 40px;
+            border-radius: 16px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
+        }
+
+        .popup-content h3 {
+            font-size: 24px;
+            margin-bottom: 15px;
+        }
+
+        .popup-content p {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 15px;
+        }
+
+        .popup-content a {
+            color: #8b5cf6;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .popup-content a:hover {
+            text-decoration: underline;
+        }
+    </style>
+
+</head>
+
+<body style="overflow-y: auto;">
+
+    <header class="dashboard-header">
+        <img src="images/advayalogo.jpg" alt="Advaya Logo" class="header-logo">
+        <h1>
+            The Grand BGSCET Advaya Hackathon 2.0 Github Registration
+        </h1>
+    </header>
+
+    <canvas id="canvas3d"></canvas>
+
+    <div class="container">
+
+        <h2>Advaya Hackathon GITHUB Registration</h2>
+
+        <form id="teamForm">
+
+            <input type="text" id="teamName" placeholder="Team Name" required>
+
+            <input type="text" id="member1" placeholder="GitHub Username (Member 1)" required>
+
+            <input type="text" id="member2" placeholder="GitHub Username (Member 2)">
+
+            <input type="text" id="member3" placeholder="GitHub Username (Member 3)">
+
+            <input type="text" id="member4" placeholder="GitHub Username (Member 4)">
+
+            <select id="domain" required>
+                <option value="">Select Domain</option>
+                <option value="AI Driven Healthcare">AI Driven Healthcare</option>
+                <option value="Sustainability & Waste Management">Sustainability & Waste Management</option>
+                <option value="Cybersecurity & Blockchain">Cybersecurity & Blockchain</option>
+            </select>
+
+            <input type="email" id="email" placeholder="Team Lead Email" required>
+
+            <button type="submit">
+                <span id="buttonText">Register Team</span>
+                <span id="loadingSpinner" style="display: none;">Creating Repository...</span>
+            </button>
+
+        </form>
+
+    </div>
+
+    <div class="rules-container">
+        <h2> GitHub Repository Registration Rules</h2>
+        <ul
+            style="list-style-type: disc; margin-left: 25px; color: rgba(255,255,255,0.7); line-height: 1.6; font-size: 14px;">
+            <li
+                style="margin-bottom: 10px; opacity: 0; transform: translateX(-10px); animation: listItemFadeIn 0.5s ease-out forwards 0.4s; transition: color 0.2s ease, transform 0.2s ease;">
+                Each team must register with a unique team name, and duplicate team names will not be accepted.</li>
+            <li
+                style="margin-bottom: 10px; opacity: 0; transform: translateX(-10px); animation: listItemFadeIn 0.5s ease-out forwards 0.5s; transition: color 0.2s ease, transform 0.2s ease, text-shadow 0.2s ease;">
+                All participants must enter valid GitHub usernames, and a GitHub account can be registered under only
+                one team.</li>
+            <li
+                style="margin-bottom: 10px; opacity: 0; transform: translateX(-10px); animation: listItemFadeIn 0.5s ease-out forwards 0.6s; transition: color 0.2s ease, transform 0.2s ease, text-shadow 0.2s ease;">
+                After successful registration, a GitHub repository will be automatically created, and all team members
+                must accept the collaborator invitation to access it.</li>
+            <li
+                style="margin-bottom: 10px; opacity: 0; transform: translateX(-10px); animation: listItemFadeIn 0.5s ease-out forwards 0.7s; transition: color 0.2s ease, transform 0.2s ease, text-shadow 0.2s ease;">
+                Teams must check their email after registration to receive the GitHub repository link and further
+                instructions.</li>
+            <li
+                style="margin-bottom: 10px; opacity: 0; transform: translateX(-10px); animation: listItemFadeIn 0.5s ease-out forwards 0.8s; transition: color 0.2s ease, transform 0.2s ease, text-shadow 0.2s ease;">
+                All project development must be done only in the assigned repository, and the repository name must not
+                be changed.</li>
+            <li
+                style="margin-bottom: 10px; opacity: 0; transform: translateX(-10px); animation: listItemFadeIn 0.5s ease-out forwards 0.9s; transition: color 0.2s ease, transform 0.2s ease, text-shadow 0.2s ease;">
+                The repository README.md must include the project title, problem statement, solution description,
+                technology stack, setup instructions, and team members.</li>
+            <li
+                style="margin-bottom: 10px; opacity: 0; transform: translateX(-10px); animation: listItemFadeIn 0.5s ease-out forwards 1.0s; transition: color 0.2s ease, transform 0.2s ease, text-shadow 0.2s ease;">
+                Teams should commit and push code regularly, avoid uploading unnecessary large files, and ensure the
+                project is original without plagiarism.</li>
+            <li
+                style="margin-bottom: 10px; opacity: 0; transform: translateX(-10px); animation: listItemFadeIn 0.5s ease-out forwards 1.1s; transition: color 0.2s ease, transform 0.2s ease, text-shadow 0.2s ease;">
+                The final submission deadline is April 2, 2026 at 10:00 AM, and commits after this time may not be
+                considered for evaluation.</li>
+        </ul>
+    </div>
+
+    <style>
+        .rules-container ul li:hover {
+            color: #8b5cf6;
+            /* Highlight color on hover */
+            transform: translateX(5px);
+            /* Slight movement on hover */
+            /* Keep existing movement */
+            text-shadow: 0 0 8px rgba(139, 92, 246, 0.6);
+            /* Add glow on hover */
+        }
+
+        .popup-content button:hover {
+            transform: translateY(-3px) scale(1.01);
+            /* Slightly less lift than main button */
+            box-shadow: 0 8px 20px rgba(99, 102, 241, 0.6);
+            /* Adjusted shadow */
+        }
+    </style>
+
+    <div id="popup" class="popup">
+
+        <div class="popup-content">
+            <h3 id="popupTitle">Repository Created Successfully🎉</h3>
+            <p id="repoLink"></p>
+            <button onclick="closePopup()">Close</button>
+        </div>
+    </div>
+
+    <script src="register.js"></script>
+    <script type="module">
+        import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.158.0/three.module.js'; // Three.js library as ES Module
+
+        // Three.js setup for an abstract digital grid background
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({
+            canvas: document.getElementById('canvas3d'),
+            alpha: true, // Allow transparency to see CSS background
+            antialias: true // Smooth edges for better visual quality
+        });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setClearColor(0x000000, 0); // Fully transparent background
+        renderer.setPixelRatio(window.devicePixelRatio);
+
+        const clock = new THREE.Clock();
+
+        // Grid parameters
+        const gridSize = 100;
+        const gridDivisions = 50;
+        const pointSize = 0.2;
+        const waveSpeed = 0.5;
+        const waveHeight = 5;
+
+        // Create grid points
+        const geometry = new THREE.BufferGeometry();
+        const positions = [];
+        const colors = [];
+
+        const color1 = new THREE.Color(0x667eea); // Blue-purple
+        const color2 = new THREE.Color(0x764ba2); // Darker purple
+
+        for (let x = -gridSize / 2; x <= gridSize / 2; x += gridSize / gridDivisions) {
+            for (let z = -gridSize / 2; z <= gridSize / 2; z += gridSize / gridDivisions) {
+                positions.push(x, 0, z); // Y will be animated
+                colors.push(color1.r, color1.g, color1.b);
+            }
+        }
+
+        geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+        geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+
+        const material = new THREE.PointsMaterial({
+            size: pointSize,
+            vertexColors: true,
+            blending: THREE.AdditiveBlending,
+            transparent: true,
+            opacity: 0.8,
+            sizeAttenuation: true
+        });
+
+        const points = new THREE.Points(geometry, material);
+        scene.add(points);
+
+        // Add subtle lines connecting points (optional, can be performance heavy for many points)
+        const lineGeometry = new THREE.BufferGeometry();
+        const linePositions = [];
+        const lineColors = [];
+
+        const tempPoints = [];
+        for (let i = 0; i < positions.length; i += 3) {
+            tempPoints.push(new THREE.Vector3(positions[i], positions[i + 1], positions[i + 2]));
+        }
+
+        const maxLineDistance = gridSize / gridDivisions * 1.5; // Connect only nearby points
+
+        for (let i = 0; i < tempPoints.length; i++) {
+            for (let j = i + 1; j < tempPoints.length; j++) {
+                if (tempPoints[i].distanceTo(tempPoints[j]) < maxLineDistance) {
+                    linePositions.push(tempPoints[i].x, tempPoints[i].y, tempPoints[i].z);
+                    linePositions.push(tempPoints[j].x, tempPoints[j].y, tempPoints[j].z);
+                    lineColors.push(color2.r, color2.g, color2.b, 0.2); // Semi-transparent lines
+                    lineColors.push(color2.r, color2.g, color2.b, 0.2);
+                }
+            }
+        }
+
+        lineGeometry.setAttribute('position', new THREE.Float32BufferAttribute(linePositions, 3));
+        lineGeometry.setAttribute('color', new THREE.Float32BufferAttribute(lineColors, 4));
+
+        const lineMaterial = new THREE.LineBasicMaterial({
+            vertexColors: true,
+            blending: THREE.AdditiveBlending,
+            transparent: true,
+            opacity: 0.1 // Very subtle lines
+        });
+
+        const lines = new THREE.LineSegments(lineGeometry, lineMaterial);
+        scene.add(lines);
+
+        // Camera position
+        camera.position.set(0, 20, 50);
+        camera.lookAt(0, 0, 0);
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const delta = clock.getDelta();
+            const elapsedTime = clock.getElapsedTime();
+
+            // Animate grid points in a wave-like pattern
+            const positions = geometry.attributes.position.array;
+            for (let i = 0; i < positions.length; i += 3) {
+                const x = positions[i];
+                const z = positions[i + 2];
+                positions[i + 1] = Math.sin(x * 0.5 + elapsedTime * waveSpeed) * waveHeight * 0.2 +
+                    Math.cos(z * 0.5 + elapsedTime * waveSpeed) * waveHeight * 0.2;
+            }
+            geometry.attributes.position.needsUpdate = true;
+
+            // Update line positions to follow the points
+            const linePositionsArray = lineGeometry.attributes.position.array;
+            let lineIndex = 0;
+            for (let i = 0; i < tempPoints.length; i++) {
+                for (let j = i + 1; j < tempPoints.length; j++) {
+                    if (tempPoints[i].distanceTo(tempPoints[j]) < maxLineDistance) {
+                        linePositionsArray[lineIndex++] = positions[i * 3];
+                        linePositionsArray[lineIndex++] = positions[i * 3 + 1];
+                        linePositionsArray[lineIndex++] = positions[i * 3 + 2];
+
+                        linePositionsArray[lineIndex++] = positions[j * 3];
+                        linePositionsArray[lineIndex++] = positions[j * 3 + 1];
+                        linePositionsArray[lineIndex++] = positions[j * 3 + 2];
+                    }
+                }
+            }
+            lineGeometry.attributes.position.needsUpdate = true;
+
+            // Rotate the entire scene for a subtle effect
+            scene.rotation.y += 0.0003; // Subtle Y rotation
+            scene.rotation.x += 0.0002; // Very subtle X rotation
+            camera.position.x = Math.sin(elapsedTime * 0.05) * 5; // Subtle camera movement
+            camera.position.z = 50 + Math.cos(elapsedTime * 0.03) * 3; // Subtle camera movement
+
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+
+
+
+</body>
+
+</html>

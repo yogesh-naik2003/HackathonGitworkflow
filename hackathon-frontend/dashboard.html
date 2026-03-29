@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Hackathon Dashboard</title>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        /* */
+
+        * {
+            /* */
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            /* */
+            font-family: 'Inter', sans-serif;
+            background: #0f0f23;
+            min-height: 100vh;
+            padding: 40px 20px;
+            color: #fff;
+        }
+
+        #canvas3d {
+            /* */
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+
+        .dashboard-header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px; /* Space below the header */
+            position: relative;
+            z-index: 1;
+        }
+
+        .header-logo {
+            height: 60px; /* Adjust logo size as needed */
+            margin-right: 15px; /* Space between logo and title */
+        }
+
+        h1 {
+            /* text-align: center; removed as flexbox handles centering */
+            margin-bottom: 0; /* Adjusted for flex container */
+            font-size: 32px;
+            color: #fff;
+            /* */
+            text-shadow: 0 0 10px rgba(102, 126, 234, 0.5);
+            /* Subtle glow */
+        }
+
+        h3 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: rgba(255, 255, 255, 0.6);
+            font-weight: 400;
+            position: relative;
+            z-index: 1;
+        }
+
+        input {
+            padding: 12px 16px;
+            width: 100%;
+            max-width: 400px;
+            margin: 0 auto 30px;
+            /* */
+            display: block;
+            border: 2px solid rgba(102, 126, 234, 0.3);
+            /* */
+            border-radius: 8px;
+            /* */
+            background: rgba(20, 20, 35, 0.8);
+            /* */
+            color: #fff;
+            /* */
+            font-size: 15px;
+            /* */
+            font-family: 'Inter', sans-serif;
+            /* */
+            transition: border 0.3s;
+            /* */
+            position: relative;
+            z-index: 1;
+        }
+
+        input::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        input:focus {
+            /* */
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 15px rgba(102, 126, 234, 0.5);
+            /* Glow on focus */
+            background: rgba(20, 20, 35, 1);
+        }
+
+        .filters {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            position: relative;
+            z-index: 1;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .filter-group label {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+
+        .score-range {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .score-range input {
+            width: 60px;
+            padding: 8px;
+            margin: 0;
+            /* */
+            border: 2px solid rgba(102, 126, 234, 0.3);
+            /* */
+            border-radius: 6px;
+            /* */
+            background: rgba(20, 20, 35, 0.8);
+            /* */
+            color: #fff;
+            /* */
+            font-size: 14px;
+            /* */
+            font-family: 'Inter', sans-serif;
+            transition: border 0.3s;
+            text-align: center;
+            /* */
+        }
+
+        .score-range span {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 14px;
+        }
+
+        select {
+            padding: 8px 12px;
+            border: 2px solid rgba(102, 126, 234, 0.3);
+            /* */
+            border-radius: 6px;
+            /* */
+            background: rgba(20, 20, 35, 0.8);
+            /* */
+            color: #fff;
+            /* */
+            font-size: 14px;
+            /* */
+            font-family: 'Inter', sans-serif;
+            transition: border 0.3s;
+            min-width: 150px;
+            position: relative;
+            z-index: 1;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 15px rgba(102, 126, 234, 0.5);
+            /* Glow on focus */
+            background: rgba(20, 20, 35, 1);
+        }
+
+        .score-input {
+            width: 80px;
+            padding: 8px;
+            margin: 0;
+            /* */
+            background: rgba(20, 20, 35, 0.8);
+            /* */
+            border: 2px solid rgba(102, 126, 234, 0.3);
+            /* */
+            border-radius: 6px;
+            /* */
+            color: #fff;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        .save-btn {
+            padding: 8px 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            /* */
+            border: none;
+            /* */
+            border-radius: 6px;
+            /* */
+            color: white;
+            /* */
+            font-weight: 600;
+            /* */
+            cursor: pointer;
+            /* */
+            font-size: 14px;
+            /* */
+            font-family: 'Inter', sans-serif;
+            transition: transform 0.2s, box-shadow 0.2s;
+            /* */
+        }
+
+        .save-btn:hover {
+            /* */
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .delete-btn {
+            padding: 8px 16px;
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            border: none;
+            border-radius: 6px;
+            color: #fff;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 14px;
+            margin-left: 5px;
+            /* */
+            font-family: 'Inter', sans-serif;
+            transition: transform 0.2s, box-shadow 0.2s;
+
+        }
+
+        .delete-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 5px;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .eliminate-btn {
+            padding: 8px 16px;
+            background: linear-gradient(135deg, #ffc107 0%, #ff8c00 100%);
+            border: none;
+            border-radius: 6px;
+            color: #000;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 14px;
+            margin-left: 5px;
+            /* */
+            font-family: 'Inter', sans-serif;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .eliminate-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .download-section {
+            text-align: center;
+            margin-bottom: 20px;
+            /* */
+            position: relative;
+            z-index: 1;
+        }
+
+        .download-btn {
+            padding: 12px 20px;
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            border: none;
+            /* */
+            border-radius: 8px;
+            /* */
+            color: white;
+            /* */
+            font-weight: 600;
+            /* */
+            cursor: pointer;
+            /* */
+            font-size: 14px;
+            /* */
+            margin: 0 10px;
+            /* */
+            transition: transform 0.2s, box-shadow 0.2s;
+            /* */
+        }
+
+        .download-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        table {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            border-collapse: collapse;
+            /* */
+            background: rgba(30, 30, 50, 0.95);
+            /* */
+            border-radius: 12px;
+            /* */
+            overflow: hidden;
+            /* */
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            /* */
+            border: 1px solid rgba(102, 126, 234, 0.3);
+            /* */
+            backdrop-filter: blur(10px);
+            /* Frosted glass effect */
+            /* */
+            position: relative;
+            z-index: 1;
+        }
+
+        th,
+        td {
+            border: 1px solid rgba(102, 126, 234, 0.2);
+            padding: 16px;
+            text-align: center;
+        }
+
+        th {
+            background: rgba(102, 126, 234, 0.3);
+            /* */
+            color: #fff;
+            /* */
+            font-weight: 600;
+            /* */
+            text-transform: uppercase;
+            /* */
+            font-size: 14px;
+            letter-spacing: 1px;
+        }
+
+        td {
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        tbody tr {
+            transition: background 0.2s;
+        }
+
+        tbody tr:hover {
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        a {
+            color: #667eea;
+            text-decoration: none;
+            /* */
+            font-weight: 600;
+            /* */
+            transition: color 0.2s;
+            /* */
+        }
+
+        a:hover {
+            color: #764ba2;
+            text-decoration: underline;
+        }
+
+        /* Modern Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .modal-container {
+            background: linear-gradient(135deg, rgba(30, 30, 50, 0.98) 0%, rgba(20, 20, 35, 0.98) 100%);
+            border: 2px solid rgba(102, 126, 234, 0.5);
+            border-radius: 20px;
+            padding: 32px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6), 0 0 40px rgba(102, 126, 234, 0.3);
+            transform: scale(0.7) translateY(-20px);
+            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .modal-overlay.active .modal-container {
+            transform: scale(1) translateY(0);
+        }
+
+        .modal-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(102, 126, 234, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .modal-overlay.active .modal-container::before {
+            left: 100%;
+        }
+
+        .modal-icon {
+            width: 70px;
+            height: 70px;
+            margin: 0 auto 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            animation: modalIconPulse 2s infinite;
+        }
+
+        .modal-icon.success {
+            background: linear-gradient(135deg, rgba(40, 167, 69, 0.2) 0%, rgba(32, 201, 151, 0.2) 100%);
+            color: #28a745;
+            border: 3px solid #28a745;
+        }
+
+        .modal-icon.error {
+            background: linear-gradient(135deg, rgba(220, 53, 69, 0.2) 0%, rgba(200, 35, 51, 0.2) 100%);
+            color: #dc3545;
+            border: 3px solid #dc3545;
+        }
+
+        .modal-icon.confirm {
+            background: linear-gradient(135deg, rgba(255, 193, 7, 0.2) 0%, rgba(255, 140, 0, 0.2) 100%);
+            color: #ffc107;
+            border: 3px solid #ffc107;
+        }
+
+        @keyframes modalIconPulse {
+            0%, 100% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 currentColor;
+            }
+            50% {
+                transform: scale(1.05);
+                box-shadow: 0 0 0 10px transparent;
+            }
+        }
+
+        .modal-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #fff;
+            text-align: center;
+            margin-bottom: 12px;
+            text-shadow: 0 0 20px rgba(102, 126, 234, 0.5);
+        }
+
+        .modal-message {
+            font-size: 16px;
+            color: rgba(255, 255, 255, 0.8);
+            text-align: center;
+            line-height: 1.6;
+            margin-bottom: 28px;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .modal-btn {
+            padding: 12px 32px;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .modal-btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .modal-btn:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .modal-btn span {
+            position: relative;
+            z-index: 1;
+        }
+
+        .modal-btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .modal-btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.6);
+        }
+
+        .modal-btn-danger {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(220, 53, 69, 0.4);
+        }
+
+        .modal-btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(220, 53, 69, 0.6);
+        }
+
+        .modal-btn-secondary {
+            background: rgba(108, 117, 125, 0.2);
+            color: rgba(255, 255, 255, 0.9);
+            border: 2px solid rgba(108, 117, 125, 0.5);
+        }
+
+        .modal-btn-secondary:hover {
+            background: rgba(108, 117, 125, 0.3);
+            border-color: rgba(108, 117, 125, 0.8);
+            transform: translateY(-2px);
+        }
+    </style>
+
+</head>
+
+<body>
+
+    <canvas id="canvas3d"></canvas>
+
+    <header class="dashboard-header">
+        <h1>Hackathon Teams Dashboard</h1>
+    </header>
+
+    <input type="text" id="search" placeholder="Search Team">
+
+    <div class="filters">
+        <div class="filter-group">
+            <label>Filter by Status:</label>
+            <select id="statusFilter">
+                <option value="">All Teams</option>
+                <option value="Active">Active Teams</option>
+                <option value="Eliminated">Eliminated Teams</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label>Filter by Domain:</label>
+            <select id="domainFilter">
+                <option value="">All Domains</option>
+                <option value="AI Driven Healthcare">AI Driven Healthcare</option>
+                <option value="Sustainability & Waste Management">Sustainability & Waste Management</option>
+                <option value="Cybersecurity & Blockchain">Cybersecurity & Blockchain</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label>Filter by Score Range:</label>
+            <div class="score-range">
+                <input type="number" id="minScore" placeholder="Min" min="0" max="100">
+                <span>to</span>
+                <input type="number" id="maxScore" placeholder="Max" min="0" max="100">
+            </div>
+        </div>
+    </div>
+    <div class="download-section">
+        <button class="download-btn" onclick="downloadPDF()">Download PDF</button>
+        <button class="download-btn" onclick="downloadExcel()">Download Excel</button>    </div>
+    <h3>Submission Deadline: April 2, 11:00 AM</h3>
+    <table>
+
+        <thead>
+
+            <tr>
+                <th>Team Name</th>
+                <th>Members</th>
+                <th>Domain</th>
+                <th>Email</th>
+                <th>Repository</th>
+                <th>Score</th>
+                <th>Action</th>
+            </tr>
+
+        </thead>
+
+        <tbody id="teamTable">
+
+        </tbody>
+
+    </table>
+
+    <!-- Modern Modal Structure -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal-container">
+            <div class="modal-icon" id="modalIcon">
+                <span id="modalIconSymbol">✓</span>
+            </div>
+            <h2 class="modal-title" id="modalTitle">Success</h2>
+            <p class="modal-message" id="modalMessage">Operation completed successfully!</p>
+            <div class="modal-buttons" id="modalButtons"></div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script type="module">
+        import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.158.0/three.module.js'; // Three.js library as ES Module
+
+        // Three.js setup for revolving stars background
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({
+            canvas: document.getElementById('canvas3d'),
+            alpha: true, // Allow transparency to see CSS background
+            antialias: true // Smooth edges
+        });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setClearColor(0x000000, 0); // Transparent background
+        renderer.setPixelRatio(window.devicePixelRatio);
+
+        // Particle System
+        const particleCount = 5000;
+        const particles = new THREE.BufferGeometry();
+        const pMaterial = new THREE.PointsMaterial({
+            color: 0xffffff,
+            size: 0.5,
+            transparent: true,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false, // Avoid particles obscuring each other incorrectly
+            opacity: 0.8
+        });
+
+        const pPositions = new Float32Array(particleCount * 3);
+        const pVelocities = new Float32Array(particleCount * 3);
+
+        const starfieldRadius = 150; // Radius of the spherical starfield
+
+        for (let i = 0; i < particleCount; i++) {
+            // Position particles randomly in a sphere
+            const x = (Math.random() - 0.5) * 2 * starfieldRadius;
+            const y = (Math.random() - 0.5) * 2 * starfieldRadius;
+            const z = (Math.random() - 0.5) * 2 * starfieldRadius;
+
+            pPositions[i * 3] = x;
+            pPositions[i * 3 + 1] = y;
+            pPositions[i * 3 + 2] = z;
+
+            // Subtle random velocities for individual movement
+            pVelocities[i * 3] = (Math.random() - 0.5) * 0.05;
+            pVelocities[i * 3 + 1] = (Math.random() - 0.5) * 0.05;
+            pVelocities[i * 3 + 2] = (Math.random() - 0.5) * 0.05;
+        }
+
+        particles.setAttribute('position', new THREE.BufferAttribute(pPositions, 3));
+        const particleSystem = new THREE.Points(particles, pMaterial);
+        scene.add(particleSystem);
+
+        camera.position.z = starfieldRadius + 50; // Adjust camera to view the starfield
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Rotate the entire particle system for the "revolving" effect
+            particleSystem.rotation.x += 0.0001;
+            particleSystem.rotation.y += 0.0002;
+            particleSystem.rotation.z += 0.00005;
+
+            // Animate particles
+            const positions = particles.attributes.position.array;
+            const velocities = pVelocities;
+
+            for (let i = 0; i < particleCount; i++) {
+                positions[i * 3] += velocities[i * 3];
+                positions[i * 3 + 1] += velocities[i * 3 + 1];
+                positions[i * 3 + 2] += velocities[i * 3 + 2];
+
+                // Reset particles if they move too far from the center, creating a continuous effect
+                const currentX = positions[i * 3];
+                const currentY = positions[i * 3 + 1];
+                const currentZ = positions[i * 3 + 2];
+
+                const distance = Math.sqrt(currentX * currentX + currentY * currentY + currentZ * currentZ);
+
+                if (distance > starfieldRadius * 1.5) { // If outside a larger boundary
+                    // Reset to a random position within the initial sphere
+                    positions[i * 3] = (Math.random() - 0.5) * 2 * starfieldRadius;
+                    positions[i * 3 + 1] = (Math.random() - 0.5) * 2 * starfieldRadius;
+                    positions[i * 3 + 2] = (Math.random() - 0.5) * 2 * starfieldRadius;
+                }
+            }
+            particles.attributes.position.needsUpdate = true;
+            renderer.render(scene, camera);
+        }
+        animate();
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+    <script src="dashboard.js"></script>
+
+</body>
+
+</html>
