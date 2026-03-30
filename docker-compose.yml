@@ -1,0 +1,71 @@
+services:
+  redis:
+    image: 'redis:7-alpine' # Use a lightweight Redis image
+    ports:
+      - '6379:6379' # Map host port 6379 to container port 6379
+    command: redis-server --appendonly yes # Enable AOF persistence for Redis
+    volumes:
+      - redis-data:/data # Mount a named volume for Redis data persistence
+    healthcheck: # Health check for Redis
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s # Check every 10 seconds
+      timeout: 5s # Timeout after 5 seconds
+      retries: 5 # Retry 5 times before marking as unhealthy
+      start_period: 10s # Give Redis 10 seconds to start up before checking
+
+  backend:
+    build:
+      context: ./hackathon-backend # Path to your backend directory containing Dockerfile
+    ports:
+      - '5000:5000' # Map host port 5000 to container port 5000
+    env_file: # Load environment variables from the .env file in the hackathon-backend directory
+      - ./hackathon-backend/.env
+    environment:
+      REDIS_HOST: redis # Override REDIS_HOST to use the service name 'redis'
+      REDIS_PORT: 6379
+      PORT: 5000 # Ensure the port is set for the app inside the container
+    depends_on: # Ensure Redis is healthy before starting backend
+      redis:
+        condition: service_healthy
+    healthcheck: # Health check for the Backend API
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 10s # Check every 10 seconds
+      timeout: 5s # Timeout after 5 seconds
+      retries: 5 # Retry 5 times before marking as unhealthy
+      start_period: 40s # Increased start_period for backend (gives more time for MongoDB)
+    command: node server.js # Command to run the backend server
+    volumes:
+      # Mount the local directory for live changes (optional, good for development)
+      # This means changes to your local files will be reflected in the container
+      - ./hackathon-backend:/app
+      # Exclude node_modules from the host mount to prevent issues with OS-specific binaries
+      - /app/node_modules
+
+  worker:
+    build:
+      context: ./hackathon-backend # Path to your backend directory containing Dockerfile
+    env_file: # Load environment variables from the .env file in the hackathon-backend directory
+      - ./hackathon-backend/.env
+    environment:
+      REDIS_HOST: redis # Override REDIS_HOST to use the service name 'redis'
+      REDIS_PORT: 6379
+    depends_on: # Ensure Redis and Backend are healthy before starting worker
+      redis:
+        condition: service_healthy
+      backend:
+        condition: service_healthy # Worker can start once backend API is healthy
+    command: node worker.js # Command to run the worker process 
+    volumes:
+      # Mount the local directory for live changes (optional, good for development)
+      - ./hackathon-backend:/app
+      # Exclude node_modules from the host mount to prevent issues with OS-specific binaries
+      - /app/node_modules
+    healthcheck: # Health check for the Worker
+      test: ["CMD-SHELL", "node /app/healthcheck-worker.js"]
+      interval: 15s # Check every 15 seconds
+      timeout: 15s # Timeout after 15 seconds (increased from 10s)
+      retries: 5 # Retry 5 times (increased from 3)
+      start_period: 60s # Give the worker 60 seconds to connect to its dependencies (increased from 45s)
+
+volumes:
+  redis-data: # Define the named volume for Redis persistence
