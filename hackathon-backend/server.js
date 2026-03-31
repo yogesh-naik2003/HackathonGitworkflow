@@ -13,14 +13,18 @@ const emailService = require("./emailService"); // Import the new Email service
  
 const app = express();
 
-app.use(cors());
+// Configure CORS for production: specify allowed origins
+app.use(cors({
+  origin: process.env.FRONTEND_URL || 'http://localhost:3000', // Replace with your actual frontend URL(s)
+  methods: ['GET', 'POST', 'PATCH', 'DELETE'],
+  credentials: true, // If you're using cookies/sessions
+}));
 app.use(express.json());
 
 console.log("Mongo URI:", process.env.MONGO_URI);
 
 // connect database
-mongoose
-  .connect(process.env.MONGO_URI)
+mongoose.connect(process.env.MONGO_URI)
   .then(() => {
     console.log("MongoDB Connected");
   })
@@ -43,8 +47,7 @@ registrationQueue.on('error', (err) => {
 });
 
 // Environment variables needed directly in server.js
-const ORG = process.env.ORG_NAME;
-
+// const ORG = process.env.ORG_NAME; // This line was commented out
 // Health check endpoint for Docker Compose
 app.get("/health", (req, res) => {
   // You could add more sophisticated checks here, like database connectivity
@@ -153,6 +156,7 @@ app.post("/create-repo", async (req, res) => {
     }
 
     // Optimistically construct repoUrl
+    const ORG = process.env.ORG_NAME; // Define ORG here, it was commented out
     const repoUrl = `https://github.com/${ORG}/${repoName}`;
 
     // save team in MongoDB
@@ -358,6 +362,29 @@ function isDeadlinePassed() {
   return now > DEADLINE;
 }
 
-app.listen(process.env.PORT || 5000, () => {
-  console.log(`Server running on port ${process.env.PORT || 5000}`);
+const server = app.listen(process.env.PORT || 5000, () => {
+  console.log(`Server running on port ${process.env.PORT || 5000} (PID: ${process.pid})`);
 });
+
+// Graceful shutdown for the backend server
+const gracefulShutdown = async () => {
+  console.log('SIGTERM/SIGINT received. Shutting down backend gracefully...');
+
+  // 1. Close HTTP server
+  server.close(() => {
+    console.log('HTTP server closed.');
+  });
+
+  // 2. Close MongoDB connection
+  await mongoose.disconnect();
+  console.log('MongoDB connection closed.');
+
+  // 3. Close BullMQ queue connection (if any operations are pending)
+  await registrationQueue.close();
+  console.log('BullMQ Queue connection closed.');
+
+  process.exit(0);
+};
+
+process.on('SIGTERM', gracefulShutdown);
+process.on('SIGINT', gracefulShutdown);

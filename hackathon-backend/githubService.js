@@ -76,8 +76,10 @@ async function validateGithubUser(username) {
 async function createFile(repoName, fileName, content) {
     const encodedContent = Buffer.from(content).toString("base64");
 
+    console.log(`GitHubService: Attempting PUT request for ${fileName} to URL: https://api.github.com/repos/${ORG}/${repoName}/contents/${fileName}`);
+
     try {
-        await axios.put(
+        const response = await axios.put(
             `https://api.github.com/repos/${ORG}/${repoName}/contents/${fileName}`,
             {
                 message: `Add ${fileName}`,
@@ -85,12 +87,20 @@ async function createFile(repoName, fileName, content) {
             },
             { headers: getGitHubHeaders() },
         );
+        console.log(`Successfully created/updated file ${fileName} in ${repoName}. SHA: ${response.data.content.sha}`);
     } catch (error) {
         if (error.response?.status === 409) {
             console.warn(`File ${fileName} already exists in ${repoName}. Skipping creation.`);
             return; // Treat 409 as a non-fatal success for file creation
         }
-        throw error; // Re-throw other errors
+        console.error(`Error creating file ${fileName} in ${repoName}:`, {
+            url: `https://api.github.com/repos/${ORG}/${repoName}/contents/${fileName}`,
+            status: error.response?.status,
+            statusText: error.response?.statusText,
+            data: error.response?.data,
+            message: error.message,
+        });
+        throw error; // Re-throw other errors after logging
     }
 }
 
@@ -120,6 +130,22 @@ async function deleteRepo(repoName) {
     }
 }
 
+async function listRepoContents(repoName, path = '') {
+    try {
+        const response = await axios.get(
+            `https://api.github.com/repos/${ORG}/${repoName}/contents/${path}`,
+            { headers: getGitHubHeaders() }
+        );
+        return response.data;
+    } catch (error) {
+        console.error(`Error listing contents for ${repoName}/${path}:`, {
+            status: error.response?.status,
+            message: error.message,
+        });
+        return []; // Return empty array on error
+    }
+}
+
 module.exports = {
     createRepo,
     checkRepoExists,
@@ -128,4 +154,5 @@ module.exports = {
     createFile,
     lockRepository,
     deleteRepo,
+    listRepoContents,
 };

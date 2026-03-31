@@ -35,22 +35,33 @@ const worker = new Worker(
       console.log(`Starting background setup for team: ${team.teamName}`);
 
       // Create the repo
-      const repoUrl = await githubService.createRepo(repoName);
+      let repoUrl;
+      try {
+        repoUrl = await githubService.createRepo(repoName);
+      } catch (repoError) {
+        console.error(`Error creating GitHub repository ${repoName}:`, repoError);
+        throw repoError; // Re-throw to fail the job
+      }
       console.log(`GitHub repository created: ${repoUrl}`);
 
       // Read template files
-      let readmeContent = await fs.readFile(
-        "./templates/README.md.template",
-        "utf8",
-      );
-      readmeContent = readmeContent.replace("{{TEAM_NAME}}", team.teamName); // Replace placeholder
-      const guidelines = await fs.readFile(
-        "./templates/submission-guidelines.md.template",
-        "utf8",
-      );
+      let readmeContent = '';
+      let guidelines = '';
+      try {
+        readmeContent = await fs.readFile("./templates/README.md.template", "utf8");
+        readmeContent = readmeContent.replace("{{TEAM_NAME}}", team.teamName); // Replace placeholder
+        console.log(`Content of README.md.template (first 100 chars): ${readmeContent.substring(0, 100)}...`);
+        guidelines = await fs.readFile("./templates/submission-guidelines.md.template", "utf8");
+        console.log(`Content of submission-guidelines.md.template (first 100 chars): ${guidelines.substring(0, 100)}...`);
+      } catch (fileError) {
+        console.error(`Error reading template files: ${fileError.message}. Ensure 'templates/README.md.template' and 'templates/submission-guidelines.md.template' exist and are readable.`);
+        throw fileError; // Re-throw to fail the job
+      }
 
+      console.log(`Worker: Attempting to create file: ${repoName}/README.md`);
       const setupPromises = [
         githubService.createFile(repoName, "README.md", readmeContent),
+        // The console.log for submission-guidelines.md content is already outside the array
         githubService.createFile(
           repoName,
           "submission-guidelines.md",
@@ -71,6 +82,10 @@ const worker = new Worker(
           console.error(`Promise at index ${index} rejected:`, result.reason);
         }
       });
+
+      // Explicitly list repository contents to verify
+      const repoContents = await githubService.listRepoContents(repoName);
+      console.log(`Repository ${repoName} contents after setup:`, repoContents.map(item => item.path));
       console.log(
         `Background file and collaborator setup complete for ${team.teamName}.`,
       );
@@ -115,5 +130,23 @@ worker.on('error', (err) => {
   console.error('BullMQ Worker encountered a connection error:', err);
   // Implement additional error handling logic here, e.g., logging to a monitoring system or sending alerts.
 });
+
+// Graceful shutdown for the worker process
+const gracefulShutdown = async () => {
+  console.log('SIGTERM/SIGINT received. Shutting down worker gracefully...');
+
+  // 1. Close BullMQ worker
+  await worker.close();
+  console.log('BullMQ Worker closed.');
+
+  // 2. Close MongoDB connection
+  await mongoose.disconnect();
+  console.log('MongoDB connection closed for Worker.');
+
+  process.exit(0);
+};
+
+process.on('SIGTERM', gracefulShutdown);
+process.on('SIGINT', gracefulShutdown);
 
 console.log("BullMQ Worker started.");
