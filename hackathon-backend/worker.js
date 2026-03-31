@@ -17,6 +17,14 @@ mongoose
     console.log("MongoDB connection error for Worker:", err);
   });
 
+// Prioritize REDIS_URL for deployment, fall back to host/port for local Docker Compose
+const redisConnectionOptions = process.env.REDIS_URL
+  ? { url: process.env.REDIS_URL }
+  : {
+      host: process.env.REDIS_HOST || "redis", // Use the service name 'redis' for local Docker Compose
+      port: parseInt(process.env.REDIS_PORT || "6379"),
+    };
+
 const worker = new Worker(
   "registrationQueue",
   async (job) => {
@@ -118,10 +126,7 @@ const worker = new Worker(
     }
   },
   {
-    connection: {
-      host: process.env.REDIS_HOST || "redis", // Use the service name 'redis'
-      port: process.env.REDIS_PORT || 6379,
-    },
+    connection: redisConnectionOptions,
     concurrency: 5, // Process up to 5 jobs concurrently
   },
 );

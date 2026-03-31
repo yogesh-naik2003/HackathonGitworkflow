@@ -54,11 +54,16 @@ mongoose.connect(process.env.MONGO_URI)
   });
 
 // Initialize BullMQ Queue
+// Prioritize REDIS_URL for deployment, fall back to host/port for local Docker Compose
+const redisConnectionOptions = process.env.REDIS_URL
+  ? { url: process.env.REDIS_URL }
+  : {
+      host: process.env.REDIS_HOST || "redis", // Use the service name 'redis' for local Docker Compose
+      port: parseInt(process.env.REDIS_PORT || "6379"),
+    };
+
 const registrationQueue = new Queue("registrationQueue", {
-  connection: {
-    host: process.env.REDIS_HOST || "redis", // Use the service name 'redis'
-    port: process.env.REDIS_PORT || 6379,
-  },
+  connection: redisConnectionOptions,
 });
 
 // Add an error listener to the BullMQ Queue instance

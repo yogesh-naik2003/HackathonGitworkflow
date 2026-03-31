@@ -11,14 +11,18 @@ async function checkWorkerHealth() {
     await mongoose.disconnect(); // Disconnect immediately
 
     // 2. Check Redis (BullMQ) connection
-    const redisOptions = {
-        host: process.env.REDIS_HOST || 'redis',
-        port: parseInt(process.env.REDIS_PORT || '6379'),
-        connectTimeout: 5000, // Timeout for the initial connection attempt
-        maxRetriesPerRequest: null, // Disable retries for health check commands
-        enableOfflineQueue: false, // Don't queue commands if offline
-    };
-    redisClient = new Redis(redisOptions);
+    let redisClientOptions;
+    if (process.env.REDIS_URL) {
+      redisClientOptions = { url: process.env.REDIS_URL };
+    } else {
+      redisClientOptions = {
+          host: process.env.REDIS_HOST || 'redis',
+          port: parseInt(process.env.REDIS_PORT || '6379'),
+      };
+    }
+    // Common options for both URL and host/port
+    redisClientOptions = { ...redisClientOptions, connectTimeout: 5000, maxRetriesPerRequest: null, enableOfflineQueue: false };
+    redisClient = new Redis(redisClientOptions);
 
     // Explicitly wait for the 'ready' event to confirm successful connection
     await new Promise((resolve, reject) => {
