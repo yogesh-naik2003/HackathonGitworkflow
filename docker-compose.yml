@@ -24,6 +24,8 @@ services:
       REDIS_HOST: redis # Override REDIS_HOST to use the service name 'redis'
       REDIS_PORT: 6379
       PORT: 5000 # Ensure the port is set for the app inside the container
+      NODE_ENV: production # Set Node.js environment to production for deployment
+      HACKATHON_DEADLINE: "2026-04-02T09:00:00" # Example: Set your deadline here or in .env
     depends_on: # Ensure Redis is healthy before starting backend
       redis:
         condition: service_healthy
@@ -34,12 +36,6 @@ services:
       retries: 5 # Retry 5 times before marking as unhealthy
       start_period: 40s # Increased start_period for backend (gives more time for MongoDB)
     command: node server.js # Command to run the backend server
-    volumes:
-      # Mount the local directory for live changes (optional, good for development)
-      # This means changes to your local files will be reflected in the container
-      - ./hackathon-backend:/app
-      # Exclude node_modules from the host mount to prevent issues with OS-specific binaries
-      - /app/node_modules
 
   worker:
     build:
@@ -49,17 +45,14 @@ services:
     environment:
       REDIS_HOST: redis # Override REDIS_HOST to use the service name 'redis'
       REDIS_PORT: 6379
+      NODE_ENV: production # Set Node.js environment to production for deployment
+      HACKATHON_DEADLINE: "2026-04-02T09:00:00" # Example: Set your deadline here or in .env
     depends_on: # Ensure Redis and Backend are healthy before starting worker
       redis:
         condition: service_healthy
       backend:
         condition: service_healthy # Worker can start once backend API is healthy
     command: node worker.js # Command to run the worker process 
-    volumes:
-      # Mount the local directory for live changes (optional, good for development)
-      - ./hackathon-backend:/app
-      # Exclude node_modules from the host mount to prevent issues with OS-specific binaries
-      - /app/node_modules
     healthcheck: # Health check for the Worker
       test: ["CMD-SHELL", "node /app/healthcheck-worker.js"]
       interval: 15s # Check every 15 seconds

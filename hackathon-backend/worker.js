@@ -29,12 +29,20 @@ const worker = new Worker(
       throw new Error(`Team with ID ${teamId} not found.`);
     }
 
-    const repoName = "team-" + team.teamName.toLowerCase().replace(/\s+/g, "-");
+    console.log(`Worker: GITHUB_TOKEN is set: ${!!process.env.GITHUB_TOKEN}`);
+    console.log(`Worker: ORG_NAME: ${process.env.ORG_NAME}`);
+
+
+    // Generate a truly unique repoName by appending a timestamp
+    // This prevents "name already exists" errors on GitHub for similar team names
+    const uniqueSuffix = Date.now(); // or a short UUID
+    const repoName = `team-${team.teamName.toLowerCase().replace(/\s+/g, "-")}-${uniqueSuffix}`;
 
     try {
       console.log(`Starting background setup for team: ${team.teamName}`);
 
       // Create the repo
+      console.log(`Worker: Attempting to create GitHub repository with name: ${repoName}`);
       let repoUrl;
       try {
         repoUrl = await githubService.createRepo(repoName);
@@ -51,28 +59,30 @@ const worker = new Worker(
         readmeContent = await fs.readFile("./templates/README.md.template", "utf8");
         readmeContent = readmeContent.replace("{{TEAM_NAME}}", team.teamName); // Replace placeholder
         console.log(`Content of README.md.template (first 100 chars): ${readmeContent.substring(0, 100)}...`);
-        guidelines = await fs.readFile("./templates/submission-guidelines.md.template", "utf8");
-        console.log(`Content of submission-guidelines.md.template (first 100 chars): ${guidelines.substring(0, 100)}...`);
       } catch (fileError) {
-        console.error(`Error reading template files: ${fileError.message}. Ensure 'templates/README.md.template' and 'templates/submission-guidelines.md.template' exist and are readable.`);
+        console.error(`Error reading template files: ${fileError.message}. Ensure 'templates/README.md.template' exists and is readable.`);
         throw fileError; // Re-throw to fail the job
       }
 
+      // Create README.md first to ensure the default branch ('main') is fully established.
+      // This helps avoid "Branch main not found" errors for subsequent file creations.
       console.log(`Worker: Attempting to create file: ${repoName}/README.md`);
-      const setupPromises = [
-        githubService.createFile(repoName, "README.md", readmeContent),
-        // The console.log for submission-guidelines.md content is already outside the array
-        githubService.createFile(
-          repoName,
-          "submission-guidelines.md",
-          guidelines,
-        ),
-      ];
+      await githubService.createFile(repoName, "README.md", readmeContent);
 
+      // Now, run other file creations and collaborator additions in parallel
+      const setupPromises = [];
+      
       if (team.members && team.members.length > 0) {
-        team.members.forEach((user) =>
-          setupPromises.push(githubService.addCollaborator(repoName, user)),
-        );
+        // Using Promise.allSettled allows individual collaborator additions to fail
+        // without stopping the entire job.
+        const collaboratorPromises = team.members.map(async (user) => {
+            const result = await githubService.addCollaborator(repoName, user);
+            if (!result.success) {
+                console.warn(`Collaborator ${user} could not be added. Reason: ${result.error}`);
+            }
+            return result; // Return the result to be collected by Promise.allSettled
+        });
+        setupPromises.push(...collaboratorPromises); // Add these promises to the overall setupPromises
       }
 
       // Run file creation and collaborator additions in parallel
@@ -98,6 +108,7 @@ const worker = new Worker(
       console.log(`Email sent successfully to ${team.email}`);
 
       // Update team in MongoDB with the repoUrl and potentially a status
+      // This happens ONLY after the GitHub repo has been successfully created.
       team.repoUrl = repoUrl;
       await team.save();
       console.log(`Team ${team.teamName} updated with repoUrl.`);

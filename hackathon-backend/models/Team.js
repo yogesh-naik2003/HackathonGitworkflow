@@ -11,7 +11,7 @@ const teamSchema = new mongoose.Schema({
     members: {
         type: [String],
         required: true,
-        unique: true
+        // Removed unique: true from array. Application-level logic handles unique members across teams.
     },
 
     domain: {
@@ -26,7 +26,7 @@ const teamSchema = new mongoose.Schema({
 
     repoUrl: {
         type: String,
-        required: true,
+        required: false, // repoUrl is populated by the worker after creation
         unique: true
     },
 

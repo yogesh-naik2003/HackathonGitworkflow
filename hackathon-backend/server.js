@@ -1,5 +1,5 @@
 require("dotenv").config();
-const DEADLINE = new Date("2026-04-02T10:00:00");
+const DEADLINE = new Date(process.env.HACKATHON_DEADLINE || "2026-04-02T09:00:00"); // Use env var for deadline
 
 const fs = require("fs").promises; // Import fs.promises for async file operations
 const express = require("express");
@@ -14,11 +14,32 @@ const emailService = require("./emailService"); // Import the new Email service
 const app = express();
 
 // Configure CORS for production: specify allowed origins
-app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000', // Replace with your actual frontend URL(s)
-  methods: ['GET', 'POST', 'PATCH', 'DELETE'],
-  credentials: true, // If you're using cookies/sessions
-}));
+if (process.env.NODE_ENV === 'development') {
+  // In development, allow all origins for flexibility
+  app.use(cors());
+  console.log("CORS: Allowing all origins in development mode.");
+} else {
+  // In production, use a more restrictive CORS policy
+  app.use(
+    cors({
+      origin: (origin, callback) => {
+        const allowedOrigins = [
+          process.env.FRONTEND_URL, // This should be your production frontend URL
+          // Add any other specific production origins here if needed
+        ].filter(Boolean); // Remove any undefined/null entries
+
+        // Check if the origin is explicitly allowed
+        if (allowedOrigins.includes(origin)) {
+          return callback(null, true);
+        }
+
+        callback(new Error("Not allowed by CORS"));
+      },
+      methods: ['GET', 'POST', 'PATCH', 'DELETE'],
+      credentials: true, // If you're using cookies/sessions
+    }),
+  );
+}
 app.use(express.json());
 
 console.log("Mongo URI:", process.env.MONGO_URI);
@@ -47,7 +68,7 @@ registrationQueue.on('error', (err) => {
 });
 
 // Environment variables needed directly in server.js
-// const ORG = process.env.ORG_NAME; // This line was commented out
+// const ORG = process.env.ORG_NAME; // ORG is used in githubService, not directly here
 // Health check endpoint for Docker Compose
 app.get("/health", (req, res) => {
   // You could add more sophisticated checks here, like database connectivity
@@ -99,6 +120,9 @@ app.post("/create-repo", async (req, res) => {
 
     console.log("Request body:", { teamName, members, domain, email });
 
+    // Deduplicate members to avoid redundant checks and operations
+    const uniqueMembers = members ? [...new Set(members)] : [];
+
     if (!teamName) {
       return res.status(400).json({
         error: "teamName is required",
@@ -107,12 +131,12 @@ app.post("/create-repo", async (req, res) => {
 
     const repoName = "team-" + teamName.toLowerCase().replace(/\s+/g, "-");
 
-    // Parallelize all remote checks: GitHub Users, GitHub Repo
+    // Parallelize all remote checks: GitHub Users, GitHub Repo (using uniqueMembers)
     const checks = [githubService.checkRepoExists(repoName)]; // 0: Repo Name Check
 
     // Add member checks if members exist
-    if (members && members.length > 0) {
-      members.forEach((m) => checks.push(githubService.validateGithubUser(m))); // 1+: Member GH Checks
+    if (uniqueMembers.length > 0) {
+      uniqueMembers.forEach((m) => checks.push(githubService.validateGithubUser(m))); // 1+: Member GH Checks
     }
 
     // Execute all checks concurrently
@@ -127,7 +151,7 @@ app.post("/create-repo", async (req, res) => {
       });
     }
 
-    if (members && members.length > 0) {
+    if (uniqueMembers.length > 0) {
       // Validation results start at index 1
       const validationResults = results.slice(1);
       const invalidUserIndex = validationResults.findIndex(
@@ -136,15 +160,15 @@ app.post("/create-repo", async (req, res) => {
       if (invalidUserIndex !== -1) {
         return res
           .status(400)
-          .json({
-            error: `GitHub user not found: ${members[invalidUserIndex]}`,
+          .json({ // Use uniqueMembers for error message
+            error: `GitHub user not found: ${uniqueMembers[invalidUserIndex]}`,
           });
       }
     }
 
     // Check if any member is already in another team.
-    if (members && members.length > 0) {
-      const existingTeam = await Team.findOne({ members: { $in: members } });
+    if (uniqueMembers.length > 0) {
+      const existingTeam = await Team.findOne({ members: { $in: uniqueMembers } });
       if (existingTeam) {
         const existingMember = members.find((member) =>
           existingTeam.members.includes(member),
@@ -155,17 +179,16 @@ app.post("/create-repo", async (req, res) => {
       }
     }
 
-    // Optimistically construct repoUrl
-    const ORG = process.env.ORG_NAME; // Define ORG here, it was commented out
-    const repoUrl = `https://github.com/${ORG}/${repoName}`;
-
     // save team in MongoDB
     const team = new Team({
       teamName: teamName,
-      members: members,
+      members: uniqueMembers, // Save unique members
       domain: domain,
       email: email,
-      repoUrl: repoUrl,
+      // repoUrl will be updated by the worker after successful GitHub creation
+      // For now, it can be null or an empty string, or derived later.
+      // It's safer to not set it optimistically if it might fail.
+      // We'll leave it out for now, worker will populate it.
     });
 
     try {
@@ -199,7 +222,7 @@ app.post("/create-repo", async (req, res) => {
     res.json({
       message:
         "Team registered successfully. Repo setup and email notification are in progress.",
-      repoUrl: repoUrl,
+      // repoUrl is now set by the worker and sent in email, not immediately known here.
     });
 
     // Add job to the queue for background processing
