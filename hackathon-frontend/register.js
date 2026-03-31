@@ -1,4 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
+    const API_BASE_URL = window.API_BASE_URL || 'http://localhost:5000'; // Default to localhost for dev
+
     const teamForm = document.getElementById('teamForm');
     const submitButton = teamForm.querySelector('button[type="submit"]');
     const buttonText = document.getElementById('buttonText');
@@ -33,7 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         try {
-            const response = await fetch('http://localhost:5000/create-repo', {
+            const response = await fetch(`${API_BASE_URL}/create-repo`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

@@ -1,5 +1,7 @@
 let teamsData = [];
 
+const API_BASE_URL = window.API_BASE_URL || 'http://localhost:5000'; // Default to localhost for dev
+
 // Modern Modal Functions
 function showModal(type, title, message, buttons = []) {
     const modalOverlay = document.getElementById('modalOverlay');
@@ -63,7 +65,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // Fetch teams from backend
 async function fetchTeams() {
     try {
-        const response = await fetch('http://localhost:5000/teams');
+        const response = await fetch(`${API_BASE_URL}/teams`);
         if (!response.ok) throw new Error('Failed to fetch teams');
         teamsData = await response.json();
         renderTable(teamsData);
@@ -167,7 +169,7 @@ async function updateScore(id) {
     }
 
     try {
-        await fetch(`http://localhost:5000/teams/${id}/score`, {
+        await fetch(`${API_BASE_URL}/teams/${id}/score`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ score: newScore }) // Send as a number
@@ -232,7 +234,7 @@ async function deleteTeam(id) {
             class: 'modal-btn-danger',
             action: async () => {
                 try {
-                    await fetch(`http://localhost:5000/teams/${id}`, {
+                    await fetch(`${API_BASE_URL}/teams/${id}`, {
                         method: 'DELETE'
                     });
                     teamsData = teamsData.filter(t => t._id !== id);
