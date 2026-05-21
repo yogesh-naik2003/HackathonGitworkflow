@@ -2,7 +2,9 @@
 
 A comprehensive full-stack web application designed to automate and streamline the management of hackathon team registrations, GitHub repository creation, and participant collaboration. This platform enables hackathon organizers to efficiently manage team registrations while automatically provisioning GitHub repositories for participating teams.
 
-**Live Demo:** [https://hackathon-gitworkflow.vercel.app](https://hackathon-gitworkflow.vercel.app)
+**GitHub Pages Deployment:** [https://yogesh-naik2003.github.io/HackathonGitworkflow/](https://yogesh-naik2003.github.io/HackathonGitworkflow/)
+
+**Previous Vercel Demo:** [https://hackathon-gitworkflow.vercel.app](https://hackathon-gitworkflow.vercel.app)
 
 ---
 
@@ -22,6 +24,7 @@ A comprehensive full-stack web application designed to automate and streamline t
 - [Workflow](#workflow)
 - [Environment Variables](#environment-variables)
 - [Docker Setup](#docker-setup)
+- [GitHub Pages Deployment](#github-pages-deployment)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -281,6 +284,54 @@ HACKATHON_DEADLINE=2026-04-02T09:00:00
    ```bash
    docker-compose down -v
    ```
+
+#### Option 3: GitHub Pages Frontend Deployment
+
+The static frontend is deployed with GitHub Pages from the `hackathon-frontend/` folder.
+
+**Deployed frontend link:** [https://yogesh-naik2003.github.io/HackathonGitworkflow/](https://yogesh-naik2003.github.io/HackathonGitworkflow/)
+
+Deployment steps:
+
+1. **Verify the frontend entry page**
+   ```bash
+   ls hackathon-frontend
+   ```
+   The folder must contain `index.html`. This project uses `index.html` to redirect visitors to `register.html`.
+
+2. **Check the GitHub Pages workflow**
+   ```bash
+   cat .github/workflows/pages.yml
+   ```
+   The workflow uploads `hackathon-frontend/` and deploys it using GitHub Actions.
+
+3. **Commit deployment changes**
+   ```bash
+   git add .github/workflows/pages.yml hackathon-frontend/.nojekyll hackathon-frontend/index.html
+   git commit -m "Deploy frontend to GitHub Pages"
+   ```
+
+4. **Push to the main branch**
+   ```bash
+   git push origin main
+   ```
+
+5. **Enable GitHub Pages**
+   - Open the repository on GitHub.
+   - Go to **Settings** -> **Pages**.
+   - Under **Build and deployment**, set **Source** to **GitHub Actions**.
+   - Save the setting if GitHub asks for confirmation.
+
+6. **Check deployment status**
+   - Go to the repository **Actions** tab.
+   - Open the **Deploy frontend to GitHub Pages** workflow.
+   - Wait until the workflow finishes successfully.
+
+7. **Open the deployed frontend**
+   - Registration page: [https://yogesh-naik2003.github.io/HackathonGitworkflow/](https://yogesh-naik2003.github.io/HackathonGitworkflow/)
+   - Dashboard page: [https://yogesh-naik2003.github.io/HackathonGitworkflow/dashboard.html](https://yogesh-naik2003.github.io/HackathonGitworkflow/dashboard.html)
+
+Important: GitHub Pages hosts only the static frontend. The backend must be deployed separately, and `API_BASE_URL` must point to that deployed backend instead of `http://localhost:5000`.
 
 ---
 
@@ -667,6 +718,11 @@ npm test
 
 ## 📋 Deployment Checklist
 
+- [x] GitHub Pages workflow added
+- [x] Static frontend deployed from `hackathon-frontend/`
+- [x] GitHub Pages link verified: `https://yogesh-naik2003.github.io/HackathonGitworkflow/`
+- [ ] Backend deployed to a production host
+- [ ] Frontend `API_BASE_URL` updated for production backend
 - [ ] All environment variables configured
 - [ ] MongoDB credentials verified
 - [ ] Redis connection tested
